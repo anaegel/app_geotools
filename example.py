@@ -26,7 +26,7 @@ ufield = ugcore.GridFunction2dCPU1(approxSpace)
 # Read Tiff-Image.
 ############################################
 
-if True:
+if False:
     # import ug4py.pyijkdata as ijk
     import pyijkdata as ijk
 
@@ -44,21 +44,24 @@ if True:
 
     # Write data.
     ugcore.Interpolate(tiffImageData, ufield, "u")
-    ugcore.WriteGridFunctionToVTK(ufield, "FieldFromTiff")
+    ugcore.WriteGridFunctionToVTK(ufield, "Field_Tiff")
 
 
 ############################################
 # Read ESRI-ASC
 ############################################
-if False:
-    myRaster = ugcore.NumberRaster2d()
-    myRaster.load_from_asc(fullFilename)
-    # myRaster.blur(desc.blurAlpha, desc.blurIterations)
+if True:
+    try:
+        myRaster = ugcore.NumberRaster2d()
+        myRaster.load_from_asc("images/example.asc")
+        # myRaster.blur(desc.blurAlpha, desc.blurIterations)
+    except Exception: 
+        print("An exception occurred:" + str(Exception))
 
-    rasterNumberData = ugcore.RasterNumberData(myRaster)
+    rasterNumberData = ugcore.RasterNumberData2d(myRaster)
     rasterNumberData.set_order(2)
     rasterNumberData.set_scale(1.0)
 
     # Write data.
-    ugcore.Interpolate(tiffImageData, ufield, "u")
-    ugcore.WriteGridFunctionToVTK(ufield, "FieldFromTiff")
+    ugcore.Interpolate(rasterNumberData, ufield, "u")
+    ugcore.WriteGridFunctionToVTK(ufield, "Field_RasterASC")
