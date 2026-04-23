@@ -28,5 +28,8 @@ jobs:
           activate-environment: geotools-test
           always-activate: true
       - name: Run test
-        run:  python -m pytest tests/test_examples.py -q
+        run: |
+          conda info
+          conda list
+          python -m pytest tests/test_examples.py -q
         
