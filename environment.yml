@@ -1,0 +1,11 @@
+name: ug4py-geotools-test
+channels:
+  - conda-forge
+dependencies:
+  - python==3.12
+  - numpy
+  - pip
+
+  - pip:
+      - ug4py-base
+      - ug4py-plugins-ijkdata
