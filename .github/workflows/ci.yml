@@ -27,9 +27,6 @@ jobs:
           environment-file: environment.yml
           activate-environment: geotools-test
           always-activate: true
-
-      - name: Install pytest
-        run: conda activate geotools-test && conda install -y pytest
-      - name: Run tests
-        run: python -m pytest tests/test_examples.py -q
+      - name: Run test
+        run:  python -m pytest tests/test_examples.py -q
         

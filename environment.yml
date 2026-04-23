@@ -4,6 +4,7 @@ channels:
 dependencies:
   - python==3.12
   - numpy
+  - pytest
   - pip
 
   - pip:
