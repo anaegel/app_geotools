@@ -27,12 +27,15 @@ jobs:
           environment-file: environment.yml
           activate-environment: geotools-test
 
-      - name: Run test
+      - name: Prepare conda environment
         run: |
           conda info
           conda list
           conda env list
           conda init
+      
+      - name: Run test
+        run: |
           conda activate geotools-test
           python -m pytest tests/test_examples.py -q
         
