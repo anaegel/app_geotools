@@ -26,16 +26,19 @@ jobs:
           python-version: 3.12
           environment-file: environment.yml
           activate-environment: geotools-test
+          auto-activate-base: false
 
-      - name: Prepare conda environment
+      - name: Install dependencies (if not using environment.yml)
+        shell: bash -l {0}
         run: |
-          conda info
-          conda list
           conda env list
-          conda init
+
+          conda install pytest
       
       - name: Run test
+        shell: bash -l {0}
         run: |
+          conda env list
           conda activate geotools-test
           python -m pytest tests/test_examples.py -q
         
