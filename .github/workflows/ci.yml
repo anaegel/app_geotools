@@ -31,5 +31,7 @@ jobs:
         run: |
           conda info
           conda list
+          conda env list
+          conda activate geotools-test
           python -m pytest tests/test_examples.py -q
         
