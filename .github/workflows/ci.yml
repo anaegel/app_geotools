@@ -29,7 +29,6 @@ jobs:
           always-activate: true
 
       - name: Install pytest
-        run: conda install -y pytest
-
-      - name: Run pytest
+        run: conda activate geotools-test && conda install -y pytest
         run: python -m pytest tests/test_examples.py -q
+        
