@@ -1,12 +1,11 @@
 # Demonstrator for GeoTools
 
 a) Read grid from TIFF.
-
 b) Write to VTK.
-
 c) Read ESRI-ascii raster data.
-
 d) Perform simulation.
+
+
 ## Installation
 
 Install UG4 (via Python)
@@ -19,7 +18,7 @@ Install geotools app:
 ```
 git clone https://github.com/anaegel/app_geotools
 cd app_geotools
-python example.py
+python example-python.py
 ```
 ## Run application
 Run application as follows:
