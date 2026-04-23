@@ -30,5 +30,6 @@ jobs:
 
       - name: Install pytest
         run: conda activate geotools-test && conda install -y pytest
+      - name: Run tests
         run: python -m pytest tests/test_examples.py -q
         
