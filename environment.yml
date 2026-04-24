@@ -6,6 +6,7 @@ dependencies:
   - numpy
   - pytest
   - pip
+  - Pillow
 
   - pip:
       - ug4py-base
