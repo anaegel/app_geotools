@@ -1,5 +1,7 @@
 # Demonstrator for GeoTools
 
+![CI](https://github.com/anaegel/app_geotools/workflows/CI/badge.svg)
+
 a) Read grid from TIFF.
 b) Write to VTK.
 c) Read ESRI-ascii raster data.
