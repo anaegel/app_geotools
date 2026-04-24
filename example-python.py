@@ -26,9 +26,9 @@ approxSpace = util.CreateApproximationSpace(dom, approxSpaceDesc)
 ufield = ug4.GridFunction2dCPU1(approxSpace)
 
 
-# Add for a python function here. I would like to open a TIFF file. Read the dimensions MxN.  
-# The data of the file should be mapped to the unit square by a linear transformation. 
-# Return the raster data as a 2D array.
+############################################
+# Python-UserData: Read TIFF image and define callback for sampling raster data in finite element assembly.
+############################################
 def read_tiff_image(filename):
     from PIL import Image
     
@@ -59,8 +59,6 @@ print(tiff_data)
 print(tiff_data.shape)
 npixel=np.min(tiff_data.shape)   
 print(f"npixel = {npixel}")
-
-
 
 
 
@@ -99,6 +97,40 @@ def raster_box_value_2d(x, y, be0x, be0y, be1x, be1y, t, si):
     return float(avg_value)    
 
 
+
+
+
+############################################
+# Configure solver.
+############################################
+# Direct solver (LU) is used here for simplicity, but for larger problems, an iterative solver with preconditioning would be more efficient.
+solver = ug4.LUCPU1()
+
+# CG with Gauss-Seidel preconditioning is an alternative for larger systems, but may require tuning for convergence.
+jac = ug4.JacobiCPU1(0.5)
+sgs = ug4.SymmetricGaussSeidelCPU1()
+solver = ug4.CGCPU1(sgs)
+
+
+
+# Multigrid solvers can be very efficient for large problems, but require more setup (defining multigrid levels, smoothers, etc.).
+gmg = ug4.GeometricMultiGrid2dCPU1(approxSpace)  # Konstruktor
+gmg.set_base_solver(ug4.LUCPU1())  
+gmg.set_base_level(1)          # Multi-grid
+
+gmg.set_smoother(sgs)
+gmg.set_cycle_type("V")     # Select cycle type "V,W,F".                  
+gmg.set_num_presmooth(3)
+gmg.set_num_postsmooth(3)      
+gmg.set_rap(True)           # Galerkin produkt  A_H=RAP
+
+# Use CG with MG as preconditioner.
+solver = ug4.CGCPU1(gmg)
+# solver = ug4.LinearSolverCPU1(gmg)
+
+
+print(solver.config_string())
+
 ############################################
 # Read MultiLayerRaster + Python-UserData
 ############################################
@@ -106,12 +138,7 @@ if True:
     try:
         import ug4py.pyijkdata as ijk
 
-        # Solver:
-        # solver = ug4.LUCPU1()
-        # prec   = ug4.GaussSeidelCPU1()
-        # solver = ug4.CGCPU1(prec)
-        # solver = ug4.JacobiCPU1(1.0) kann auch verwendet werden, kann zu problemen fürhren, weil es langsamer konvergiert
-        solver = ug4.LUCPU1()
+     
 
         # Create finite element discretizations for two cases: 
         # A) Interpolation, B) Diffusion problem with spatially varying K(x).
@@ -131,6 +158,7 @@ if True:
 
 
         # Case A : Compute L2-Interpolation. 
+        # FV : \Int_{B} u dV = \Int_{B} py_ud dV
         elemDiscA.set_source(py_ud)
         elemDiscA.set_diffusion(0.0)
         elemDiscA.set_reaction_rate(1.0)
@@ -142,6 +170,7 @@ if True:
         domainDiscA.assemble_linear(A, b)
         domainDiscA.adjust_solution(ufield)
 
+        gmg.set_discretization(domainDiscA)
         solver.init(A)
         solver.apply(ufield, b)
         ug4.WriteGridFunctionToVTK(ufield, f"vtk/Field_K_{NUM_REFS}_refs_{METHOD}")
@@ -150,23 +179,26 @@ if True:
         #k.add(py_ud, ug4.ConstUserMatrix2d())
 
 
-        # FALL B : Diffusionsproblem mit K(x)
-        elemDiscB.set_source(0.0)
-        k = ug4.ScaleAddLinkerNumber2d() # k = k0 + pyud
+        # Case B : Diffusion problem with spatially varying K(x):   
+        #   \nabla \cdot (-K(x) \nabla u) = 0
+        #  with K(x) = 0.001 + 1000*(1-py_ud)
+       
+        k = ug4.ScaleAddLinkerNumber2d() # k = k0 + 1000*(1-pyud)
         k0= 0.001
-        k.add(k0, 1.0)
-        k.add(py_ud, 1.0)
+        k.add(k0+1, 10.0)
+        k.add(py_ud, -10.0)
+
+        K = ug4.ScaleAddLinkerMatrix2d()
+        K.add(k, ug4.ConstUserMatrix2d())
+
 
         # def MyExp (v): return 10**(-v)
         # def MyExp_v (v): return -math.log(10.0) * (10**(-v))
         # pyExp=ug4.PythonUserFunction2d(MyExp, 1)
         # pyExp.set_input_and_deriv(0,k, MyExp_v)
 
-        K = ug4.ScaleAddLinkerMatrix2d()
-        K.add(k, ug4.ConstUserMatrix2d())
-
-
         elemDiscB.set_diffusion(K)
+        elemDiscB.set_source(0.0)
         elemDiscB.set_reaction_rate(0.0)  
 
         # Gradient from WEST to EAST (noflux on NORTH/SOUTH).
@@ -174,15 +206,20 @@ if True:
         dirichletBND.add(0.0, "u", "EAST")
         dirichletBND.add(1.0, "u", "WEST")
 
+        # Collect all discretization components and assemble the system.
         domainDiscB = ug4.DomainDiscretization2dCPU1(approxSpace)
+        A = ug4.AssembledLinearOperatorCPU1(domainDiscB)
+
         domainDiscB.add(elemDiscB)
         domainDiscB.add(dirichletBND)
         domainDiscB.assemble_linear(A, b)
         domainDiscB.adjust_solution(ufield)
-
-        A = ug4.AssembledLinearOperatorCPU1(domainDiscB)
+        
+        # Solve the system and write results to VTK for visualization.
+        gmg.set_discretization(domainDiscB)
         solver.init(A)
         solver.apply(ufield, b)
+
         ug4.WriteGridFunctionToVTK(ufield, f"vtk/Field_u_{NUM_REFS}_refs_{METHOD}")
         print(f"Wrote Field_u_{NUM_REFS}_refs_{METHOD} VTK file.")
         print("Done.")
@@ -192,3 +229,5 @@ if True:
         print(type(inst))    # the exception type
         print(inst.args)     # arguments stored in .args
         print(inst)          #
+
+
