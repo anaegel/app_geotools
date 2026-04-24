@@ -13,9 +13,10 @@ on:
 
 jobs:
   test:
-    name: Run example script tests (${{ matrix.os }})
+    name: Run script tests (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
 
