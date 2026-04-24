@@ -14,8 +14,8 @@ ROOT = Path(__file__).resolve().parent.parent
 @pytest.mark.parametrize(
     "script_path",
     [
-        ROOT / "example-python.py",
-        ROOT / "example-tiff.py",
+        ROOT / "example01-tiff.py",
+        ROOT / "example02-python.py",
     ],
 )
 def test_example_scripts_run_without_error(script_path: Path) -> None:
